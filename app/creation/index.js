@@ -20,6 +20,7 @@ var Image = React.Image;
 var ListView = React.ListView;
 var Dimensions = React.Dimensions;
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS;
+var RefreshControl = React.RefreshControl;
 
 var width = Dimensions.get('window').width;
 
@@ -36,6 +37,7 @@ var List = React.createClass({
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         return {
             isLoadingTail:false,
+            isRefreshing:false,
             dataSource: ds.cloneWithRows([]),
         };
     },
@@ -70,9 +72,18 @@ var List = React.createClass({
     },
     _fetchData(page) {
         var that = this;
-        this.setState({
-            isLoadingTail: true
-        });
+
+        if (page !== 0){
+            this.setState({
+                isLoadingTail: true
+            });
+        }else{
+            this.setState({
+                isRefreshing: true
+            });
+        }
+
+
 
         request.get(config.api.base + config.api.creations,{
             accessToken: 'ssxc',
@@ -82,21 +93,45 @@ var List = React.createClass({
                 if (data.success){
 
                     var items = cacheResults.items.slice();
-                    items = items.concat(data.data);
+
+                    if (page !== 0){
+                        items = items.concat(data.data);
+                        cacheResults.nextPage += 1;
+                    }else{
+                        items = data.data.concat(items);
+                    }
+
+
                     cacheResults.items = items;
                     cacheResults.total = data.total;
                     setTimeout(function(){
-                        that.setState({
-                            isLoadingTail: false,
-                            dataSource: that.state.dataSource.cloneWithRows(cacheResults.items)
-                        })
+                        if (page !== 0){
+                            that.setState({
+                                isLoadingTail: false,
+                                dataSource: that.state.dataSource.cloneWithRows(cacheResults.items)
+                            })
+                        }else{
+                            that.setState({
+                                isRefreshing: false,
+                                dataSource: that.state.dataSource.cloneWithRows(cacheResults.items)
+                            })
+                        }
+
                     },2000);
                 }
             })
             .catch((error) => {
-                this.setState({
-                    isLoadingTail: false
-                });
+                if (page !== 0){
+                    this.setState({
+                        isLoadingTail: false
+                    });
+                }else{
+                    this.setState({
+                        isRefreshing: false
+                    });
+                }
+
+
                 console.warn(error);
             });
     },
@@ -113,6 +148,12 @@ var List = React.createClass({
         var page = cacheResults.nextPage;
         this._fetchData(page);
 
+    },
+    _onRefresh(){
+        if (!this._hasMore() || this.state.isRefreshing){
+            return
+        }
+        this._fetchData(0);
     },
 
     _renderFooter(){
@@ -143,9 +184,19 @@ var List = React.createClass({
                     renderRow={this._renderRow}
                     renderFooter={this._renderFooter}
                     onEndReached={this._fetchMoreData}
+                    showsVerticalScrollIndicator = {false}
                     onEndReachedThreshold={20}
                     enableEmptySections = {true}
                     automaticallyAdjustContentInsets={false}
+
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={this.state.isRefreshing}
+                            onRefresh={this._onRefresh}
+                            tintColor="#ff6600"
+                            title="拼命加载中..."
+                        />
+                    }
                 />
             </View>
         )
