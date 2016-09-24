@@ -1,0 +1,16 @@
+{
+  "name": "xiaohai",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "react-native start"
+  },
+  "dependencies": {
+    "lodash": "^4.16.1",
+    "mockjs": "^1.0.1-beta3",
+    "query-string": "^4.2.3",
+    "react": "^0.14.8",
+    "react-native": "^0.22.2",
+    "react-native-vector-icons": "^2.1.0"
+  }
+}
