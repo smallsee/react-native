@@ -19,11 +19,12 @@ var TouchableHighlight = React.TouchableHighlight;
 var Image = React.Image;
 var ListView = React.ListView;
 var Dimensions = React.Dimensions;
+var ActivityIndicatorIOS = React.ActivityIndicatorIOS;
 
 var width = Dimensions.get('window').width;
 
 var cacheResults = {
-  nextPage: 1,
+    nextPage: 1,
     items:[],
     total: 0
 };
@@ -45,7 +46,7 @@ var List = React.createClass({
                 <View style={styles.item}>
                     <Text style={styles.title}>{row.title}</Text>
                     <Image source={{uri: row.thumb}}
-                            style={styles.thumb}>
+                           style={styles.thumb}>
                         <Icon name="ios-play" size={28} style={styles.play} />
                     </Image>
                     <View style={styles.itemFooter}>
@@ -68,37 +69,85 @@ var List = React.createClass({
         this._fetchData(1)
     },
     _fetchData(page) {
+        var that = this;
+        this.setState({
+            isLoadingTail: true
+        });
+
         request.get(config.api.base + config.api.creations,{
-           accessToken: 'ssxc',
+            accessToken: 'ssxc',
             page:page
         })
             .then((data) => {
                 if (data.success){
-                    this.setState({
-                        dataSource: this.state.dataSource.cloneWithRows(data.data)
-                    })
+
+                    var items = cacheResults.items.slice();
+                    items = items.concat(data.data);
+                    cacheResults.items = items;
+                    cacheResults.total = data.total;
+                    setTimeout(function(){
+                        that.setState({
+                            isLoadingTail: false,
+                            dataSource: that.state.dataSource.cloneWithRows(cacheResults.items)
+                        })
+                    },2000);
                 }
-                console.log(data);
             })
             .catch((error) => {
+                this.setState({
+                    isLoadingTail: false
+                });
                 console.warn(error);
             });
     },
 
+    _hasMore(){
+        return cacheResults.items.length !== cacheResults.total
+    },
+
+    _fetchMoreData(){
+        if (!this._hasMore() || this.state.isLoadingTail){
+            return
+        }
+
+        var page = cacheResults.nextPage;
+        this._fetchData(page);
+
+    },
+
+    _renderFooter(){
+        if (!this._hasMore() && cacheResults.total !== 0){
+            return (
+                <View style={styles.loadingMore}>
+                    <Text style={styles.loadingText}>没有更多了</Text>
+                </View>
+            )
+        }
+
+        if (!this.state.isLoadingTail){
+            return <View style={styles.loadingMore}></View>
+        }
+
+        return <ActivityIndicatorIOS style={styles.loadingMore} />
+
+    },
 
     render(){
         return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>列表页面</Text>
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>列表页面</Text>
+                </View>
+                <ListView
+                    dataSource={this.state.dataSource}
+                    renderRow={this._renderRow}
+                    renderFooter={this._renderFooter}
+                    onEndReached={this._fetchMoreData}
+                    onEndReachedThreshold={20}
+                    enableEmptySections = {true}
+                    automaticallyAdjustContentInsets={false}
+                />
             </View>
-            <ListView
-                dataSource={this.state.dataSource}
-                renderRow={this._renderRow}
-                enableEmptySections = {true}
-                automaticallyAdjustContentInsets={false}
-            />
-        </View>
         )
     }
 });
@@ -109,13 +158,13 @@ var styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F5FCFF',
     },
-   header:{
+    header:{
         padding:25,
-       paddingBottom:12,
-       backgroundColor:'#ee735c'
-   },
+        paddingBottom:12,
+        backgroundColor:'#ee735c'
+    },
     headerTitle:{
-       color:'#fff',
+        color:'#fff',
         fontSize:16,
         fontWeight: '600',
         textAlign:'center'
@@ -174,6 +223,14 @@ var styles = StyleSheet.create({
     commentIcon:{
         fontSize:22,
         color:'#333'
+    },
+    loadingMore:{
+        marginVertical:20
+    },
+    loadingText:{
+        color: '#777',
+        textAlign:'center'
+
     }
 });
 
