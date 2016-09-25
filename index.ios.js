@@ -47,21 +47,20 @@ render() {
                 selectedTab: 'list',
               });
             }}>
-            {/*<Navigator*/}
-                {/*initialRoute={{*/}
-                    {/*name:'list',*/}
-                    {/*component:List*/}
-                {/*}}*/}
-                {/*configureScene={(route)=>{*/}
-                    {/*return Navigator.SceneConfigs.FloatFromRight*/}
-                {/*}}*/}
-                {/*renderScene={(route,navigator)=>{*/}
-                    {/*var Component = route.component*/}
+            <Navigator
+                initialRoute={{
+                    name:'list',
+                    component:List
+                }}
+                configureScene={(route)=>{
+                    return Navigator.SceneConfigs.FloatFromRight
+                }}
+                renderScene={(route,navigator)=>{
+                    var Component = route.component
 
-                    {/*return <Component {...route.params} navigator={navigator}/>*/}
-                {/*}}*/}
-            {/*/>*/}
-            <List/>
+                    return <Component {...route.params} navigator={navigator}/>
+                }}
+            />
         </Icon.TabBarItem>
           <Icon.TabBarItem
               renderAsOriginal = {true}

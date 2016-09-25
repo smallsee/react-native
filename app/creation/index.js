@@ -9,8 +9,9 @@
 var React = require('react-native');
 var Icon = require('react-native-vector-icons/Ionicons');
 
-var request = require('../common/request')
-var config = require('../common/config')
+var request = require('../common/request');
+var config = require('../common/config');
+var Detail = require('./detail');
 
 var StyleSheet = React.StyleSheet;
 var Text = React.Text;
@@ -117,6 +118,8 @@ var List = React.createClass({
 
     _renderRow(row) {
         return <Item
+            key={row._id}
+            onSelect={()=>this._loadPage(row)}
             row={row} />
     },
 
@@ -230,12 +233,15 @@ var List = React.createClass({
 
     },
 
-    // _loadPage(){
-    //   this.props.navigator.push({
-    //       name:'detail',
-    //       component:Detail
-    //   })
-    // },
+    _loadPage(row){
+      this.props.navigator.push({
+          name:'detail',
+          component:Detail,
+          params:{
+              row:row
+          }
+      })
+    },
 
     render(){
         return (
