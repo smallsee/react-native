@@ -21,6 +21,7 @@ var ListView = React.ListView;
 var Dimensions = React.Dimensions;
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS;
 var RefreshControl = React.RefreshControl;
+var AlertIOS = React.AlertIOS;
 
 var width = Dimensions.get('window').width;
 
@@ -30,9 +31,81 @@ var cacheResults = {
     total: 0
 };
 
+
+//子组件
+var Item = React.createClass({
+
+    getInitialState(){
+        var row = this.props.row;
+
+        return {
+            up:row.voted,
+            row:row
+        }
+    },
+    _up(){
+        var that =this;
+        var up = !this.state.up;
+        var row = this.state.row;
+        var url = config.api.base + config.api.up;
+
+        var body = {
+            id: row._id,
+            up: up ? 'yes' : 'no',
+            accessToken: 'xiaohai'
+        }
+
+
+        request.post(url,body)
+            .then(function(data){
+                console.log(url);
+                if (data && data.success){
+                    that.setState({
+                        up:up
+                    })
+                }else{
+                    AlertIOS.alert('点赞失败,稍后重试')
+                }
+            })
+            .catch(function(err){
+                console.log(err)
+                AlertIOS.alert('点赞失败,稍后重试')
+            })
+
+    },
+   render (){
+        var row = this.state.row;
+       return (
+           <TouchableHighlight onPress={this.props.onSelect}>
+               <View style={styles.item}>
+                   <Text style={styles.title}>{row.title}</Text>
+                   <Image source={{uri: row.thumb}}
+                          style={styles.thumb}>
+                       <Icon name="ios-play" size={28} style={styles.play} />
+                   </Image>
+                   <View style={styles.itemFooter}>
+                       <View style={styles.handleBox}>
+                           <Icon name={this.state.up ? "ios-heart" :"ios-heart-outline"} size={28}
+                                 style={[styles.up,this.state.up ? null : styles.down]}
+                                 onPress={this._up}/>
+                           <Text style={styles.handleText} onPress={this._up}>喜欢</Text>
+                       </View>
+
+                       <View style={styles.handleBox}>
+                           <Icon name="ios-chatboxes-outline" size={28} style={styles.commentIcon} />
+                           <Text style={styles.handleText}>评论</Text>
+                       </View>
+                   </View>
+               </View>
+           </TouchableHighlight>
+       )
+   }
+});
+
 //列表页面
 var List = React.createClass({
 
+    //根据生命周期会第一个调用这个方法
     getInitialState: function() {
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         return {
@@ -43,31 +116,13 @@ var List = React.createClass({
     },
 
     _renderRow(row) {
-        return (
-            <TouchableHighlight>
-                <View style={styles.item}>
-                    <Text style={styles.title}>{row.title}</Text>
-                    <Image source={{uri: row.thumb}}
-                           style={styles.thumb}>
-                        <Icon name="ios-play" size={28} style={styles.play} />
-                    </Image>
-                    <View style={styles.itemFooter}>
-                        <View style={styles.handleBox}>
-                            <Icon name="ios-heart-outline" size={28} style={styles.up} />
-                            <Text style={styles.handleText}>喜欢</Text>
-                        </View>
-
-                        <View style={styles.handleBox}>
-                            <Icon name="ios-chatboxes-outline" size={28} style={styles.commentIcon} />
-                            <Text style={styles.handleText}>评论</Text>
-                        </View>
-                    </View>
-                </View>
-            </TouchableHighlight>
-        )
+        return <Item
+            row={row} />
     },
 
-    componentDidMount() {
+
+    //获取外部数据的传递
+    componentDidMount() {  //页面加载好后
         this._fetchData(1)
     },
     _fetchData(page) {
@@ -86,7 +141,7 @@ var List = React.createClass({
 
 
         request.get(config.api.base + config.api.creations,{
-            accessToken: 'ssxc',
+            accessToken: 'xiaohai',
             page:page
         })
             .then((data) => {
@@ -103,7 +158,9 @@ var List = React.createClass({
 
 
                     cacheResults.items = items;
+
                     cacheResults.total = data.total;
+                    console.log(data.total);
                     setTimeout(function(){
                         if (page !== 0){
                             that.setState({
@@ -173,6 +230,13 @@ var List = React.createClass({
 
     },
 
+    // _loadPage(){
+    //   this.props.navigator.push({
+    //       name:'detail',
+    //       component:Detail
+    //   })
+    // },
+
     render(){
         return (
             <View style={styles.container}>
@@ -182,6 +246,7 @@ var List = React.createClass({
                 <ListView
                     dataSource={this.state.dataSource}
                     renderRow={this._renderRow}
+
                     renderFooter={this._renderFooter}
                     onEndReached={this._fetchMoreData}
                     showsVerticalScrollIndicator = {false}
@@ -269,6 +334,10 @@ var styles = StyleSheet.create({
     },
     up:{
         fontSize:22,
+        color:'#ed7b66'
+    },
+    down:{
+        fontSize:22,
         color:'#333'
     },
     commentIcon:{
@@ -282,7 +351,8 @@ var styles = StyleSheet.create({
         color: '#777',
         textAlign:'center'
 
-    }
+    },
+
 });
 
 module.exports = List;

@@ -8,12 +8,12 @@
 
 var React = require('react-native');
 var Icon = require('react-native-vector-icons/Ionicons');
-var Component = React.Component;
 var AppRegistry = React.AppRegistry;
 var StyleSheet = React.StyleSheet;
 var Text = React.Text;
 var View = React.View;
 var TabBarIOS = React.TabBarIOS;
+var Navigator = React.Navigator;
 
 
 
@@ -47,7 +47,21 @@ render() {
                 selectedTab: 'list',
               });
             }}>
-            <List />
+            {/*<Navigator*/}
+                {/*initialRoute={{*/}
+                    {/*name:'list',*/}
+                    {/*component:List*/}
+                {/*}}*/}
+                {/*configureScene={(route)=>{*/}
+                    {/*return Navigator.SceneConfigs.FloatFromRight*/}
+                {/*}}*/}
+                {/*renderScene={(route,navigator)=>{*/}
+                    {/*var Component = route.component*/}
+
+                    {/*return <Component {...route.params} navigator={navigator}/>*/}
+                {/*}}*/}
+            {/*/>*/}
+            <List/>
         </Icon.TabBarItem>
           <Icon.TabBarItem
               renderAsOriginal = {true}
