@@ -173,7 +173,7 @@ var List = React.createClass({
                             })
                         }
 
-                    },2000);
+                    },20);
                 }
             })
             .catch((error) => {
@@ -259,8 +259,7 @@ var List = React.createClass({
                     showsVerticalScrollIndicator = {false} //是否显示进度条
 
                     enableEmptySections = {true} //不需要空白的位置
-                    automaticallyAdjustContentInsets={false}
-
+                    automaticallyAdjustContentInsets={false} //自动调整内容
                     onEndReached={this._fetchMoreData}   //当所有的数据都已经渲染过，
                     // 并且列表被滚动到距离最底部不足onEndReachedThreshold个像素的距离时调用
                     renderFooter={this._renderFooter}   //到达底部时渲染 下拉事件

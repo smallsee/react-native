@@ -11,6 +11,8 @@ var Icon = require('react-native-vector-icons/Ionicons');
 
 var Video = require('react-native-video').default;
 
+var request = require('../common/request');
+var config = require('../common/config');
 
 
 var StyleSheet = React.StyleSheet;
@@ -19,16 +21,31 @@ var View = React.View;
 var Dimensions = React.Dimensions; //获取显示器的宽度
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS; //进度条组件
 var TouchableOpacity= React.TouchableOpacity; //暂停组件
+var Image = React.Image;
+var ListView = React.ListView;
 
 
 var width = Dimensions.get('window').width;
+
+var cacheResults = {
+    nextPage: 1,
+    items:[],
+    total: 0
+};
+
 //账户页面
 var Detail = React.createClass({
 
+
     getInitialState(){
         var data = this.props.data;
+        var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2
+    });
+
         return {
             data:data,      //父级上传递过来的资源
+            dataSource: ds.cloneWithRows([]), //获取到数据
+
             videoOk:true, //视频是否准备好
             videoLoaded:false, //视频读取好没
             playing:false , //是否正在播放
@@ -77,7 +94,7 @@ var Detail = React.createClass({
 
         this.setState(newState); //讲数据放进启动项
 
-        console.log(data);
+
         console.log('load _onProgress')
     },
     _onEnd(){
@@ -123,9 +140,119 @@ var Detail = React.createClass({
         }
     },
 
+    //页面加载后调用的方法
+    componentDidMount(){
+      this._fetchData();
+    },
+
+    _fetchData(page) {
+        var that = this;
+
+
+            this.setState({
+                isLoadingTail: true
+            });
+
+        request.get(config.api.base + config.api.comment,{
+            creation:123,
+            accessToken:'xiaohai',
+            page:page
+        })
+            .then((data) => {
+                if (data.success){
+
+                    var items = cacheResults.items.slice();
+                        items = items.concat(data.data);
+                        cacheResults.nextPage += 1;
+
+
+
+                    cacheResults.items = items;
+
+                    cacheResults.total = data.total;
+                    console.log(data.total);
+
+
+                            that.setState({
+                                isLoadingTail: false,
+                                dataSource: that.state.dataSource.cloneWithRows(cacheResults.items)
+                            })
+
+                }
+            })
+            .catch((error) => {
+
+                    this.setState({
+                        isLoadingTail: false
+                    });
+
+                console.warn(error);
+            });
+    },
+
+    _hasMore(){
+        //用来判断是否还有数据存在
+        return cacheResults.items.length !== cacheResults.total
+    },
+
+    _fetchMoreData(){
+        if (!this._hasMore() || this.state.isLoadingTail){
+            return
+        }
+
+        var page = cacheResults.nextPage;
+        this._fetchData(page);
+
+    },
+
+
+    _renderFooter(){
+        if (!this._hasMore() && cacheResults.total !== 0){
+            return (
+                <View style={styles.loadingMore}>
+                    <Text style={styles.loadingText}>没有更多了</Text>
+                </View>
+            )
+        }
+
+        if (!this.state.isLoadingTail){
+            return <View style={styles.loadingMore}></View>
+        }
+
+        return <ActivityIndicatorIOS style={styles.loadingMore} />
+
+    },
+
+    _renderRow(row){
+
+        return (
+
+        <View key={row._id} style={styles.replyBox}>
+            <Image style={styles.replyAvatar} source={{uri:row.replyBy.avatar}}/>
+            <View style={styles.reply}>
+                <Text style={styles.replyNickname}>{row.replyBy.nickname}</Text>
+                <Text style={styles.replyContent}>{row.content}</Text>
+            </View>
+
+        </View>
+        )
+    },
+
+    _renderHeader(){
+        var data = this.state.data;
+        return (
+            <View style={styles.infoBox}>
+                <Image style={styles.avatar} source={{uri:data.author.avatar}}/>
+                <View style={styles.descBox}>
+                    <Text style={styles.nickname}>{data.author.nickname}</Text>
+                    <Text style={styles.title}>{data.title}</Text>
+                </View>
+            </View>
+        )
+    },
+
     render: function(){
         var data = this.props.data; //获取到父级传递来的数据
-        console.log(data);
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
@@ -194,7 +321,25 @@ var Detail = React.createClass({
                         </View>
                     </View>
 
+
+
                 </View>
+
+                    <ListView
+                        dataSource={this.state.dataSource}  //获取数据
+                        renderRow={this._renderRow} //讲获取的数据填充到视图中
+                        showsVerticalScrollIndicator = {false} //是否显示进度条
+                        enableEmptySections = {true} //不需要空白的位置
+                        automaticallyAdjustContentInsets={false} //自动调整内容
+
+
+                        onEndReached={this._fetchMoreData}   //当所有的数据都已经渲染过，
+                                                           // 并且列表被滚动到距离最底部不足onEndReachedThreshold个像素的距离时调用
+                        renderHeader={this._renderHeader}
+                        renderFooter={this._renderFooter}   //到达底部时渲染 下拉事件
+
+                    />
+
             </View>
         )
     }
@@ -242,18 +387,18 @@ var styles = StyleSheet.create({
     },
     videoBox:{
         width:width,
-        height:360,
+        height:width * 0.56,
         backgroundColor:'#000'
     },
     video:{
         width:width,
-        height:360,
+        height:width * 0.56,
         backgroundColor:'#000'
     },
     failText:{
         position:'absolute',
         left: 0,
-        top:180,
+        top:90,
         width:width,
         textAlign:'center',
         color:'#fff',
@@ -262,7 +407,7 @@ var styles = StyleSheet.create({
     loading:{
         position:'absolute',
         left: 0,
-        top:140,
+        top:80,
         width:width,
         alignSelf:'center',
         backgroundColor:'transparent'
@@ -281,7 +426,7 @@ var styles = StyleSheet.create({
 
     playIcon:{
         position:'absolute',
-        top:140,
+        top:90,
         left:width/2 -30,
         height:60,
         width:60,
@@ -295,14 +440,14 @@ var styles = StyleSheet.create({
     },
     pauseBtn:{
         width:width,
-        height:360,
+        height:width * 0.56,
         position:'absolute',
         left:0,
         top:0
     },
     resumeIcon:{
         position:'absolute',
-        top:140,
+        top:80,
         left:width/2 -30,
         height:60,
         width:60,
@@ -314,6 +459,64 @@ var styles = StyleSheet.create({
         borderRadius: 30,
         color:'#ed7b66'
     },
+
+    infoBox:{
+        width:width,
+        flexDirection:'row',
+        justifyContent:'center',
+        marginTop:10
+    },
+    avatar:{
+        width:60,
+        height:60,
+        marginRight:10,
+        marginLeft:10,
+        borderRadius:30,
+    },
+    descBox:{
+        flex:1
+    },
+    nickname:{
+        fontSize:18
+    },
+    title:{
+        marginTop:9,
+        fontSize:16,
+        color:'#666'
+    },
+    replyBox:{
+        flexDirection:'row',
+        justifyContent:'flex-start',
+        marginTop:10
+    },
+    replyAvatar:{
+        width:40,
+        height:40,
+        marginRight:10,
+        marginLeft:10,
+        borderRadius:20
+    },
+    replyNickname:{
+        color:'#666'
+    },
+    replyContent:{
+        marginTop:4,
+        color:'#666'
+    },
+    reply:{
+        flex:1
+    },
+    loadingMore:{
+        marginVertical:20
+    },
+    loadingText:{
+        color: '#777',
+        textAlign:'center'
+    },
+
+
+
+
 
 });
 
