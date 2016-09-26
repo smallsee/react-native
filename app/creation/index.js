@@ -38,25 +38,22 @@ var Item = React.createClass({
 
     getInitialState(){
         var row = this.props.row;
-
         return {
             up:row.voted,
             row:row
         }
     },
     _up(){
-        var that =this;
-        var up = !this.state.up;
-        var row = this.state.row;
-        var url = config.api.base + config.api.up;
+        var that = this; //因为我们用延迟两秒来还原真实数据的到来,所以若果直接设置this会报错
+        var up = !this.state.up; //双击的话就取反
+        var row = this.state.row; //获取到数据
+        var url = config.api.base + config.api.up ;  //post传递的地址
 
         var body = {
-            id: row._id,
-            up: up ? 'yes' : 'no',
-            accessToken: 'xiaohai'
-        }
-
-
+            id: row._id, //第几条数据
+            up: up ? 'yes' : 'no', //显示还是不显示
+            accessToken: 'xiaohai' //请求地址的标识
+        };
         request.post(url,body)
             .then(function(data){
                 console.log(url);
@@ -110,8 +107,8 @@ var List = React.createClass({
     getInitialState: function() {
         var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
         return {
-            isLoadingTail:false,
-            isRefreshing:false,
+            isLoadingTail:false,  //是否下拉
+            isRefreshing:false, //是否上划
             dataSource: ds.cloneWithRows([]),
         };
     },
@@ -119,7 +116,7 @@ var List = React.createClass({
     _renderRow(row) {
         return <Item
             key={row._id}
-            onSelect={()=>this._loadPage(row)}
+            onSelect={()=>this._loadPage(row)} //当数据图被选中 也就是点击的时候却换页面调用的而方法
             row={row} />
     },
 
@@ -128,6 +125,8 @@ var List = React.createClass({
     componentDidMount() {  //页面加载好后
         this._fetchData(1)
     },
+
+
     _fetchData(page) {
         var that = this;
 
@@ -140,9 +139,6 @@ var List = React.createClass({
                 isRefreshing: true
             });
         }
-
-
-
         request.get(config.api.base + config.api.creations,{
             accessToken: 'xiaohai',
             page:page
@@ -190,25 +186,25 @@ var List = React.createClass({
                         isRefreshing: false
                     });
                 }
-
-
                 console.warn(error);
             });
     },
 
-    _hasMore(){
-        return cacheResults.items.length !== cacheResults.total
-    },
+        _hasMore(){
+            //用来判断是否还有数据存在
+            return cacheResults.items.length !== cacheResults.total
+        },
 
-    _fetchMoreData(){
-        if (!this._hasMore() || this.state.isLoadingTail){
-            return
-        }
+        _fetchMoreData(){
+            if (!this._hasMore() || this.state.isLoadingTail){
+                return
+            }
 
-        var page = cacheResults.nextPage;
-        this._fetchData(page);
+            var page = cacheResults.nextPage;
+            this._fetchData(page);
 
-    },
+        },
+
     _onRefresh(){
         if (!this._hasMore() || this.state.isRefreshing){
             return
@@ -236,9 +232,9 @@ var List = React.createClass({
     _loadPage(row){
       this.props.navigator.push({
           name:'detail',
-          component:Detail,
+          component:Detail,  //模板
           params:{
-              data:row
+              data:row //获取到这个页面的数据 也就是视频的数据 给下个详情页去添加
           }
       })
     },
@@ -250,22 +246,31 @@ var List = React.createClass({
                     <Text style={styles.headerTitle}>列表页面</Text>
                 </View>
                 <ListView
-                    dataSource={this.state.dataSource}
-                    renderRow={this._renderRow}
 
-                    renderFooter={this._renderFooter}
-                    onEndReached={this._fetchMoreData}
-                    showsVerticalScrollIndicator = {false}
-                    onEndReachedThreshold={20}
-                    enableEmptySections = {true}
+                    dataSource={this.state.dataSource}  //获取数据
+                    renderRow={this._renderRow} //讲获取的数据填充到视图中
+
+
+
+                    onEndReachedThreshold={20}            //调用onEndReached之前的临界值，单位是像素。
+
+
+
+                    showsVerticalScrollIndicator = {false} //是否显示进度条
+
+                    enableEmptySections = {true} //不需要空白的位置
                     automaticallyAdjustContentInsets={false}
 
-                    refreshControl={
+                    onEndReached={this._fetchMoreData}   //当所有的数据都已经渲染过，
+                    // 并且列表被滚动到距离最底部不足onEndReachedThreshold个像素的距离时调用
+                    renderFooter={this._renderFooter}   //到达底部时渲染 下拉事件
+
+                    refreshControl={  //上划事件
                         <RefreshControl
                             refreshing={this.state.isRefreshing}
                             onRefresh={this._onRefresh}
                             tintColor="#ff6600"
-                            title="拼命加载中..."
+                            title="拼命加载中1..."
                         />
                     }
                 />

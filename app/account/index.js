@@ -11,17 +11,26 @@ var Icon = require('react-native-vector-icons/Ionicons');
 var StyleSheet = React.StyleSheet;
 var Text = React.Text;
 var View = React.View;
+var ListView = React.ListView;
+
 
 
 
 //账户页面
 var Account = React.createClass({
-    render: function(){
+    getInitialState: function() {
+        var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+        return {
+            dataSource: ds.cloneWithRows(['row 1', 'row 2']),
+        };
+    },
+    render() {
         return (
-            <View style={styles.container}>
-                <Text>账户页面</Text>
-            </View>
-        )
+            <ListView
+                dataSource={this.state.dataSource}
+                renderRow={(row) => <Text>{row}</Text>}
+            />
+        );
     }
 });
 
