@@ -97,7 +97,7 @@ var Detail = React.createClass({
     },
 
     //回到父级容器的方法
-    _backToList(){
+    _pop(){
       this.props.navigator.pop();
     },
     //重播方法
@@ -128,11 +128,18 @@ var Detail = React.createClass({
         console.log(data);
         return (
             <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBox} onPress={this._pop}>
+                        <Icon name='ios-arrow-back' style={styles.backIcon}/>
+                        <Text style={styles.backText}>返回</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle} numberOfLines={1}>视频详情页</Text>
+                </View>
                 <Text onPress={this._backToList}>详情页面{data._id}</Text>
                 <View style={styles.videoBox}>
                     <Video
                         ref="videoPlayer" //播放名称
-                        source={{uri:data.video}} //播放的数据
+                        source={{uri:data.video }} //播放的数据
                         style={styles.video}   //播放器的样式
                         volume={1} //播放的声音大小
                         paused={this.state.paused} //暂停
@@ -200,6 +207,39 @@ var styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#F5FCFF',
     },
+    header:{
+      flexDirection:'row',
+        justifyContent:'center',
+        alignItems:'center',
+        width:width,
+        height:64,
+        paddingTop:20,
+        paddingLeft:10,
+        paddingRight:10,
+        borderBottomWidth:1,
+        borderColor:'rgba(0,0,0,1)',
+        backgroundColor:'#fff'
+    },
+    backBox:{
+        position:'absolute',
+        left:12,
+        top:32,
+        width:50,
+        flexDirection:'row',
+        alignItems:'center'
+    },
+    headerTitle:{
+      width:width-120,
+        textAlign:'center'
+    },
+    backIcon:{
+      color:'#999',
+        fontSize:20,
+        marginRight:5
+    },
+    backText:{
+        color:'#999'
+    },
     videoBox:{
         width:width,
         height:360,
@@ -209,6 +249,15 @@ var styles = StyleSheet.create({
         width:width,
         height:360,
         backgroundColor:'#000'
+    },
+    failText:{
+        position:'absolute',
+        left: 0,
+        top:180,
+        width:width,
+        textAlign:'center',
+        color:'#fff',
+        backgroundColor:'transparent'
     },
     loading:{
         position:'absolute',
