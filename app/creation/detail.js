@@ -88,7 +88,8 @@ var Detail = React.createClass({
             })
         }
 
-        var duration = data.playableDuration; //获取视频播放长度
+        var duration = data.target; //获取视频播放长度
+        //console.log(data);
         var currentTime = data.currentTime; //获取现在播放的时候
         var percent = Number((currentTime/duration).toFixed(2)); //获取之间比,精确到小数点后两位
         var newState = {
@@ -381,7 +382,7 @@ var Detail = React.createClass({
                     {
                         !this.state.videoOk && <Text style={styles.failText}>视频出错了!很抱歉</Text>
                     }
-                    {/*显示进度条 里面的数据已经定义了 时间比是关键*/}
+                    {/*显示转圈*/}
                     {
                         !this.state.videoLoaded && <ActivityIndicatorIOS
                             color='#ee735c'
@@ -410,6 +411,7 @@ var Detail = React.createClass({
                             null
                     }
 
+                    {/*这个才是进度条的组件*/}
                     <View style={styles.progressBox}>
                         <View style={[styles.progressBar,{width:width * this.state.videoProgress}]}>
 
@@ -546,7 +548,7 @@ var styles = StyleSheet.create({
     failText:{
         position:'absolute',
         left: 0,
-        top:90,
+        top:width*0.56 -60,
         width:width,
         textAlign:'center',
         color:'#fff',
@@ -555,7 +557,7 @@ var styles = StyleSheet.create({
     loading:{
         position:'absolute',
         left: 0,
-        top:80,
+        top:width*0.56 - 40,
         width:width,
         alignSelf:'center',
         backgroundColor:'transparent'
