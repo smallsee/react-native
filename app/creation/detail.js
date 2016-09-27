@@ -10,6 +10,7 @@ var React = require('react-native');
 var Icon = require('react-native-vector-icons/Ionicons');
 
 var Video = require('react-native-video').default;
+var Button = require('react-native-button');
 
 var request = require('../common/request');
 var config = require('../common/config');
@@ -23,6 +24,9 @@ var ActivityIndicatorIOS = React.ActivityIndicatorIOS; //进度条组件
 var TouchableOpacity= React.TouchableOpacity; //暂停组件
 var Image = React.Image;
 var ListView = React.ListView;
+var TextInput = React.TextInput;
+var Modal = React.Modal;
+var AlertIOS = React.AlertIOS;
 
 
 var width = Dimensions.get('window').width;
@@ -43,18 +47,26 @@ var Detail = React.createClass({
     });
 
         return {
+            //数据的
             data:data,      //父级上传递过来的资源
             dataSource: ds.cloneWithRows([]), //获取到数据
 
+            //视频进度条的
             videoOk:true, //视频是否准备好
             videoLoaded:false, //视频读取好没
             playing:false , //是否正在播放
             paused:false, //是否暂停
-
             videoProgress:0.01, //获取之间比
             videoTotal: 0, //时间总长度
             currentTime: 0, //现在的时间
 
+            //输入框的
+            animationType: 'none', //浮层出现的形式
+            modalVisible:false, //是否可见
+            isSending:false, //是否发送出去
+            content:'',
+
+            //视频播放的
             rate:1, //速度为正常
             muted:false, //不消除声音
             resizeMode:'contain', //居中显示
@@ -172,7 +184,6 @@ var Detail = React.createClass({
                     cacheResults.total = data.total;
                     console.log(data.total);
 
-
                             that.setState({
                                 isLoadingTail: false,
                                 dataSource: that.state.dataSource.cloneWithRows(cacheResults.items)
@@ -210,7 +221,7 @@ var Detail = React.createClass({
         if (!this._hasMore() && cacheResults.total !== 0){
             return (
                 <View style={styles.loadingMore}>
-                    <Text style={styles.loadingText}>没有更多了</Text>
+                    <Text style={styles.loadingText}>没有更多数据了!</Text>
                 </View>
             )
         }
@@ -237,18 +248,102 @@ var Detail = React.createClass({
         </View>
         )
     },
+    _focus(){
+        this._setModalVisible(true);
+    },
+    _blur(){
 
+    },
+    _closeModal(){
+        this._setModalVisible(false);
+    },
+    _setModalVisible(isVisible){
+      this.setState({
+          modalVisible: isVisible
+      })
+    },
     _renderHeader(){
         var data = this.state.data;
         return (
-            <View style={styles.infoBox}>
-                <Image style={styles.avatar} source={{uri:data.author.avatar}}/>
-                <View style={styles.descBox}>
-                    <Text style={styles.nickname}>{data.author.nickname}</Text>
-                    <Text style={styles.title}>{data.title}</Text>
+            <View style={styles.listHeader}>
+                <View style={styles.infoBox}>
+                    <Image style={styles.avatar} source={{uri:data.author.avatar}}/>
+                    <View style={styles.descBox}>
+                        <Text style={styles.nickname}>{data.author.nickname}</Text>
+                        <Text style={styles.title}>{data.title}</Text>
+                    </View>
+                </View>
+                <View style={styles.commentBox}>
+                    <View style={styles.comment}>
+
+                        <TextInput placeholder='好喜欢这个动漫...'
+                            style={styles.content}
+                           multiline={true}
+                           onFocus={this._focus}
+                        />
+                    </View>
+                </View>
+
+                <View style={styles.commentArea}>
+                    <Text style={styles.commentTitle}>精彩评论</Text>
                 </View>
             </View>
         )
+    },
+
+    _submit(){
+        var that = this;
+        if (!this.state.content){
+            return AlertIOS.alert('留言不能为空');
+        }
+        if (this.state.isSending){
+            return AlertIOS.alert('正在评论中');
+        }
+        this.setState({
+            isSending:true
+        },function(){
+            var body={
+                accessToken:'xiaohai',
+                creation:'123',
+                content:this.state.content
+            };
+
+            var url = config.api.base + config.api.comment;
+
+            request.post(url,body)
+                .then(function(data){
+                    if (data && data.success){
+                        var items = cacheResults.items.slice();
+                        var content= that.state.content;
+                        items = [{
+
+                            content:content,
+                            replyBy:{
+                                nickname:'小海说',
+                                avatar:'http://dummyimage.com/640x640/b5eb54)'
+                            }
+                        }].concat(items)
+
+                        cacheResults.items = items;
+                        cacheResults.total = cacheResults.total + 1
+                        that.setState({
+                            content:'',
+                            isSending:false,
+                            dataSource:that.state.dataSource.cloneWithRows(cacheResults.items)
+                        })
+
+                        that._setModalVisible(false);
+                    }
+                })
+                .catch((err) => {
+                    console.log(err)
+                    that.setState({
+                        isSending:false,
+                    })
+                    that._setModalVisible(false);
+                    AlertIOS.alert('留言失败,请重试')
+                })
+        })
     },
 
     render: function(){
@@ -262,7 +357,7 @@ var Detail = React.createClass({
                     </TouchableOpacity>
                     <Text style={styles.headerTitle} numberOfLines={1}>视频详情页</Text>
                 </View>
-                <Text onPress={this._backToList}>详情页面{data._id}</Text>
+                <Text>详情页面{data._id}</Text>
                 <View style={styles.videoBox}>
                     <Video
                         ref="videoPlayer" //播放名称
@@ -281,7 +376,7 @@ var Detail = React.createClass({
                         onEnd={this._onEnd} //播放结束
                         onError={this._onError} //播放过程中错误
                     />
-
+                </View>
                     {/*出错时*/}
                     {
                         !this.state.videoOk && <Text style={styles.failText}>视频出错了!很抱歉</Text>
@@ -322,13 +417,10 @@ var Detail = React.createClass({
                     </View>
 
 
-
-                </View>
-
                     <ListView
                         dataSource={this.state.dataSource}  //获取数据
                         renderRow={this._renderRow} //讲获取的数据填充到视图中
-                        showsVerticalScrollIndicator = {false} //是否显示进度条
+                        showsVerticalScrollIndicator = {true} //是否显示进度条
                         enableEmptySections = {true} //不需要空白的位置
                         automaticallyAdjustContentInsets={false} //自动调整内容
 
@@ -339,6 +431,38 @@ var Detail = React.createClass({
                         renderFooter={this._renderFooter}   //到达底部时渲染 下拉事件
 
                     />
+
+                    <Modal
+                        animationType={'fade'} //浮层出现的形式
+                        visible={this.state.modalVisible} //是否可见
+                        onRequestClose={()=> {this._setModalVisible(false)}} //关闭时调用
+                    >
+                        <View style={styles.modalContainer}>
+                            <Icon onPress={this._closeModal}
+                                  name="ios-close-outline"
+                                  style={styles.closeIcon}
+                            />
+                            <View style={styles.commentBox}>
+                                <View style={styles.comment}>
+
+                                    <TextInput placeholder='好喜欢这个动漫啊...'
+                                               style={styles.content}
+                                               multiline={true}
+                                               defaultValue={this.state.content}
+                                               onChangeText={(text)=>{
+                                                   this.setState({
+                                                       content:text
+                                                   })
+                                               }}
+                                    />
+                                </View>
+                            </View>
+                            <Text style={styles.submitBtn} onPress={this._submit}>评论
+                            </Text>
+                        </View>
+
+                    </Modal>
+
 
             </View>
         )
@@ -351,6 +475,30 @@ var styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         backgroundColor: '#F5FCFF',
+    },
+    modalContainer:{
+        flex:1,
+        paddingTop:45,
+        backgroundColor:'#fff'
+
+    },
+    closeIcon:{
+        alignSelf:'center',
+        fontSize:30,
+        color:'#ee753c'
+    },
+    submitBtn:{
+      width:width - 20,
+        padding:16,
+        marginTop:20,
+        marginBottom:20,
+        marginLeft:10,
+        borderWidth:1,
+        borderColor:'#ee753c',
+        borderRadius:4,
+        fontSize:18,
+        color:'#ee753c',
+        textAlign:'center'
     },
     header:{
       flexDirection:'row',
@@ -443,7 +591,7 @@ var styles = StyleSheet.create({
         height:width * 0.56,
         position:'absolute',
         left:0,
-        top:0
+        top:80
     },
     resumeIcon:{
         position:'absolute',
@@ -507,15 +655,40 @@ var styles = StyleSheet.create({
         flex:1
     },
     loadingMore:{
-        marginVertical:20
+        marginVertical:20,
     },
     loadingText:{
         color: '#777',
-        textAlign:'center'
+        marginLeft:width/2 - 50
+
     },
-
-
-
+    listHeader:{
+        width:width,
+        marginTop:10
+    },
+    commentBox:{
+      marginTop:10,
+        padding:8,
+        width:width
+    },
+    content:{
+        paddingLeft:2,
+        color:'#333',
+        borderWidth:1,
+        borderColor:'#ddd',
+        borderRadius:4,
+        fontSize:14,
+        height:80
+    },
+    commentArea:{
+        width:width,
+        marginTop:10,
+        paddingBottom:6,
+        paddingLeft:10,
+        paddingRight:10,
+        borderBottomWidth:1,
+        borderBottomColor:'#eee'
+    },
 
 
 });
