@@ -14,13 +14,15 @@ var Text = React.Text;
 var View = React.View;
 var TabBarIOS = React.TabBarIOS;
 var Navigator = React.Navigator;
+var AsyncStorage  = React.AsyncStorage;
 
 
 
 //列表页面
 var List = require('./app/creation/index');
 var Edit = require('./app/edit/index');
-var Account = require('./app/account/index');
+var Accout = require('./app/account/index');
+var Login = require('./app/account/login');
 
 
 
@@ -29,10 +31,53 @@ var xiaohai = React.createClass({
   getInitialState: function() {
     return {
       selectedTab: 'list',
+        logined:false,
+        user : null,
     };
   },
 
+    componentDidMount(){
+      this._asyncAppStatus()
+    },
+
+    _asyncAppStatus(){
+        var that = this;
+        AsyncStorage.getItem('user')
+            .then((data)=>{
+                var user;
+                var newState = {}
+
+                if (data){
+                    user = JSON.parse(data);
+                }
+
+                if (user && user.accessToken){
+                    newState.user = user;
+                    newState.logined = true;
+                }else{
+                    newState.logined = false;
+                }
+
+                that.setState(newState);
+            })
+    },
+    _afterLogin(user){
+        var that = this;
+        user = JSON.stringify(user);
+        AsyncStorage.setItem('user',user)
+            .then((data) => {
+                that.setState({
+                    logined:true,
+                    user:user
+                })
+            })
+    },
+
 render() {
+
+        if(!this.state.logined){
+            return <Login afterLogin={this._afterLogin}  />
+        }
   return (
       <TabBarIOS
           tintColor="#ee735c"
@@ -85,7 +130,7 @@ render() {
                       selectedTab: 'account',
                   });
               }}>
-              <Account />
+              <Accout />
           </Icon.TabBarItem>
 
 
