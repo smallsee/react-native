@@ -19,7 +19,6 @@ var config = require('../common/config');
 var StyleSheet = React.StyleSheet;
 var Text = React.Text;
 var View = React.View;
-var Dimensions = React.Dimensions; //获取显示器的宽度
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS; //进度条组件
 var TouchableOpacity= React.TouchableOpacity; //暂停组件
 var Image = React.Image;
@@ -27,7 +26,8 @@ var ListView = React.ListView;
 var TextInput = React.TextInput;
 var Modal = React.Modal;
 var AlertIOS = React.AlertIOS;
-
+var SliderIOS = React.SliderIOS;
+var Dimensions = React.Dimensions; //获取显示器的宽度
 
 var width = Dimensions.get('window').width;
 
@@ -59,6 +59,8 @@ var Detail = React.createClass({
             videoProgress:0.01, //获取之间比
             videoTotal: 0, //时间总长度
             currentTime: 0, //现在的时间
+            value:0.01,
+            slider:false,
 
             //输入框的
             animationType: 'none', //浮层出现的形式
@@ -73,14 +75,24 @@ var Detail = React.createClass({
             repeat:false //不重复播放
         }
     },
-    _onLoadStart(){
+    _onLoadStart(data){
+        console.log(data)
         console.log('load start')
     },
-    _onLoad(){
-        console.log('load _onLoad')
+    _onLoad(data){
+        console.log(data)
+        if (!this.state.slider){
+            data.currentTime = 17;
+            console.log('ss');
+        }
+    },
+    _slider(){
+
     },
     //读取结束后开始运行
     _onProgress(data){
+        console.log(data)
+        console.log('load _onProgress')
         //data是获取的数据
         if (!this.state.videoLoaded){
             this.setState({
@@ -95,8 +107,10 @@ var Detail = React.createClass({
         var newState = {
             videoTotal:duration, //时间总长度
             currentTime:Number(data.currentTime.toFixed(2)), //现在的时间
-            videoProgress:percent //获取之间比
+            videoProgress:percent, //获取之间比
+            value:percent
         };
+
 
         if (!this.state.videoLoaded){
             newState.videoLoaded = true
@@ -108,7 +122,7 @@ var Detail = React.createClass({
         this.setState(newState); //讲数据放进启动项
 
 
-        console.log('load _onProgress')
+
     },
     _onEnd(){
         this.setState({
@@ -377,6 +391,18 @@ var Detail = React.createClass({
                         onEnd={this._onEnd} //播放结束
                         onError={this._onError} //播放过程中错误
                     />
+
+                    {/*<View style={styles.videoSlider}>*/}
+                        {/*<SliderIOS*/}
+                                    {/*value={this.state.value}*/}
+                                    {/*onSlidingComplete={this._slider}*/}
+                                    {/*onValueChange={(value)=>this.setState({value:value})}*/}
+                        {/*/>*/}
+                    {/*</View>*/}
+
+
+
+
                 </View>
                     {/*出错时*/}
                     {
@@ -411,6 +437,8 @@ var Detail = React.createClass({
                             null
                     }
 
+
+
                     {/*这个才是进度条的组件*/}
                     <View style={styles.progressBox}>
                         <View style={[styles.progressBar,{width:width * this.state.videoProgress}]}>
@@ -419,9 +447,14 @@ var Detail = React.createClass({
                     </View>
 
 
+
+
+
+
                     <ListView
                         dataSource={this.state.dataSource}  //获取数据
                         renderRow={this._renderRow} //讲获取的数据填充到视图中
+
                         showsVerticalScrollIndicator = {true} //是否显示进度条
                         enableEmptySections = {true} //不需要空白的位置
                         automaticallyAdjustContentInsets={false} //自动调整内容
@@ -463,7 +496,11 @@ var Detail = React.createClass({
                             </Text>
                         </View>
 
+
+
                     </Modal>
+
+
 
 
             </View>
@@ -477,6 +514,12 @@ var styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         backgroundColor: '#F5FCFF',
+    },
+    videoSlider:{
+        flex:1,
+        marginTop:-10,
+        width:width,
+        height:20
     },
     modalContainer:{
         flex:1,

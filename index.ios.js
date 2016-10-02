@@ -8,6 +8,7 @@
 
 var React = require('react-native');
 var Icon = require('react-native-vector-icons/Ionicons');
+
 var AppRegistry = React.AppRegistry;
 var StyleSheet = React.StyleSheet;
 var Text = React.Text;
@@ -30,7 +31,7 @@ var Login = require('./app/account/login');
 var xiaohai = React.createClass({
   getInitialState: function() {
     return {
-      selectedTab: 'list',
+      selectedTab: 'account',
         logined:false,
         user : null,
     };

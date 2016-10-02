@@ -15,7 +15,8 @@ module.exports = {
         up:'api/up',
         comment:'api/comments',
         signup:'api/u/signup',
-        verify:'api/u/verify'
+        verify:'api/u/verify',
+        signature:'api/signature'
     }
 
 }

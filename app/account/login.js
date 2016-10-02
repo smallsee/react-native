@@ -62,7 +62,6 @@ var Login = React.createClass({
         request.post(signupURL,body)
             .then((data)=>{
                 if (data && data.success){
-                    console.log('asda');
                     that._showVerifyCode()
                 }else{
                     AlertIOS.alert('获取验证码失败!请检查手机是否正确');
