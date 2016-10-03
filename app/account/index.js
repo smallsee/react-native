@@ -46,15 +46,7 @@ var photoOptions = {
 };
 
 
-var CLOUDINARY = {
-    cloud_name: 'supersea',
-    api_key: '815174356727538',
-    api_secret: 'gKK0PlXoAOBSklKXlMw93lWMxpI',
-    base: 'http://res.cloudinary.com/supersea',
-    image: 'https://api.cloudinary.com/v1_1/supersea/image/upload',
-    video: 'https://api.cloudinary.com/v1_1/supersea/video/upload',
-    audio: 'https://api.cloudinary.com/v1_1/supersea/raw/upload',
-};
+
 
 function avatar(id, type) {
 
@@ -66,7 +58,13 @@ function avatar(id, type) {
         return id
     }
 
-    return CLOUDINARY.base + '/' + type + '/upload/' + id
+    if (id.indexOf('avatar/') > -1){
+      return CLOUDINARY.base + '/' + type + '/upload/' + id
+    }
+
+    return 'http://oeh9bympq.bkt.clouddn.com/' + id
+
+
 }
 
 
@@ -113,6 +111,17 @@ var Account = React.createClass({
                 }
             })
     },
+  _getQiniuToken(){
+    //七牛
+    var accessToken = this.state.user.accessToken;
+    var signatureURL = config.api.base + config.api.signature;
+    return request.post(signatureURL, {
+      accessToken: accessToken,
+      cloud:'qiniu',
+    }).catch((err)=> {
+      console.log(err)
+    })
+  },
     _pickPhoto(){
 
         var that = this;
@@ -123,52 +132,69 @@ var Account = React.createClass({
             }
 
             var avartarData = 'data:image/jpeg;base64,' + res.data;
-            var timestamp = Date.now();
-            var tags = 'app,avatar';
-            var folder = 'avatar';
-            var signatureURL = config.api.base + config.api.signature;
-            var accessToken = this.state.user.accessToken;
-            request.post(signatureURL, {
-                accessToken: accessToken,
-                timestamp: timestamp,
-                folder: folder,
-                tags: tags,
-                type: 'avatar'
-            }).catch((err)=> {
-                console.log(err)
-            })
-                .then((data)=> {
-                    console.log(data);
-                    if (data && data.success) {
-                        var signature = 'folder=' + folder + '&tags=' + tags +
-                            '&timestamp=' + timestamp + CLOUDINARY.api_secret
 
-                        signature = sha1(signature);
 
-                        var body = new FormData()
+          //七牛
+          var uri = res.uri;
 
-                        body.append('folder', folder);
-                        body.append('signature', signature);
-                        body.append('tags', tags);
-                        body.append('timestamp', timestamp);
-                        body.append('api_key', CLOUDINARY.api_key);
-                        body.append('resource_type', 'image');
-                        body.append('file', avartarData);
+          that._getQiniuToken()
+            .then((data) =>{
 
-                        that._upload(body)
-                    }
-                })
+                if (data && data.success) {
 
+                  var token = data.data.token;
+                  var key = data.data.key;
+
+                  var body = new FormData();
+
+                  body.append('token', token);
+                  body.append('key', key);
+                  body.append('file', {
+                    type:'image/jpeg',
+                    uri:uri,
+                    name:key
+                  });
+
+                  that._upload(body)
+                }
+
+            });
+
+          // request.post(signatureURL, {
+          //   accessToken: accessToken,
+          //   timestamp: timestamp,
+          //   key: key,
+          //   type: 'avatar'
+          // }).catch((err)=> {
+          //   console.log(err)
+          // })
+          //   .then((data)=> {
+          //     if (data && data.success) {
+          //
+          //       var signature = data.data;
+          //       console.log(signature);
+          //
+          //       var body = new FormData();
+          //
+          //       body.append('folder', folder);
+          //       body.append('signature', signature);
+          //       body.append('tags', tags);
+          //       body.append('timestamp', timestamp);
+          //       body.append('api_key', config.cloudinary.api_key);
+          //       body.append('resource_type', 'image');
+          //       body.append('file', avartarData);
+          //
+          //       that._upload(body)
+          //     }
+          //   })
         });
     },
     _upload(body){
-        console.log(body);
-
-
         var xhr = new XMLHttpRequest();
-        var url = CLOUDINARY.image;
+        var url = config.qiniu.upload;
         var that = this;
 
+        console.log(body);
         this.setState({
             avatarUploading: true,
             avatarProgress: 0
@@ -196,19 +222,30 @@ var Account = React.createClass({
                 console.log('parse fails')
             }
 
-            if (response && response.public_id) {
-                var user = that.state.user;
+            console.log(response);
+
+            if (response){
+              var user = that.state.user;
+              if (response.public_id){
                 user.avatar = response.public_id;
+              }
+              if (response.key){
+                user.avatar = response.key;
+              }
+              that.setState({
+                user: user,
+                avatarUploading: false,
+                avatarProgress: 0
 
-                that.setState({
-                    user: user,
-                    avatarUploading: false,
-                    avatarProgress: 0
-
-                });
-
-                that._asyncUser(true);
+              });
             }
+
+
+
+
+
+            that._asyncUser(true);
+
         };
 
         if (xhr.upload) {
@@ -270,7 +307,7 @@ var Account = React.createClass({
     },
     render() {
         var user = this.state.user;
-        console.log(user);
+
         return (
             <View style={styles.container}>
                 <View style={styles.toolbar}>
