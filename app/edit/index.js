@@ -15,8 +15,13 @@ var StyleSheet = React.StyleSheet;
 var Text = React.Text;
 var View = React.View;
 var Image = React.Image;
+var AsyncStorage = React.AsyncStorage;
+var ProgressViewIOS = React.ProgressViewIOS;
 var TouchableOpacity = React.TouchableOpacity;
 var Dimensions = React.Dimensions;
+
+var request = require('../common/request');
+var config = require('../common/config');
 
 
 var width = Dimensions.get('window').width;
@@ -41,15 +46,22 @@ var videoOptions = {
 var Edit = React.createClass({
 
     getInitialState(){
+      var user = this.props.user;
         return{
+
+          user:user,
           previewVideo: null,
+
 
           //视频进度条的
           videoOk:true, //视频是否准备好
           videoLoaded:false, //视频读取好没
+          videoUploading:false,
+          videoUploaded:false,
           playing:false , //是否正在播放
           paused:false, //是否暂停
           videoProgress:0.01, //获取之间比
+          videoUploadedProgress:0.01,
           videoTotal: 0, //时间总长度
           currentTime: 0, //现在的时间
 
@@ -72,8 +84,6 @@ var Edit = React.createClass({
   },
   //读取结束后开始运行
   _onProgress(data){
-    console.log(data)
-    console.log('load _onProgress')
     //data是获取的数据
     if (!this.state.videoLoaded){
       this.setState({
@@ -111,7 +121,6 @@ var Edit = React.createClass({
     this.setState({
       videoOk:false
     });
-
     console.log(e)
     console.log('load _onError')
   },
@@ -138,6 +147,83 @@ var Edit = React.createClass({
     }
   },
 
+  _getQiniuToken(){
+    //七牛
+    var accessToken = this.state.user.accessToken;
+    var signatureURL = config.api.base + config.api.signature;
+    return request.post(signatureURL, {
+      accessToken: accessToken,
+      cloud:'qiniu',
+      type:'video'
+    }).catch((err)=> {
+      console.log(err)
+    })
+  },
+
+  _upload(body){
+    var xhr = new XMLHttpRequest();
+    var url = config.qiniu.upload;
+    var that = this;
+
+    console.log(body);
+    this.setState({
+      videoUploadedProgress:0,
+      videoUploading: true,
+      videoUploaded: false
+    });
+
+    xhr.open('POST', url)
+    xhr.onload = () => {
+      if (xhr.status !== 200) {
+        AlertIOS.alert('请求失败');
+        console.log(xhr.responseText);
+        return
+      }
+      if (!xhr.responseText) {
+        AlertIOS.alert('请求失败');
+        return
+      }
+
+      var response;
+
+      try {
+        response = JSON.parse(xhr.response);
+      }
+      catch (e) {
+        console.log(e);
+        console.log('parse fails')
+      }
+
+      console.log(response);
+
+      if (response){
+
+        that.setState({
+          video: response,
+          videoUploading: false,
+          videoUploaded: true
+
+        });
+      }
+
+    };
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          var percent = Number((event.loaded / event.total).toFixed(2));
+
+          that.setState({
+            videoUploadedProgress: percent
+          })
+        }
+      }
+    }
+
+    xhr.send(body);
+
+  },
+
   _pickVideo(){
 
     var that = this;
@@ -148,35 +234,55 @@ var Edit = React.createClass({
       }
 
       var uri = res.uri;
+      console.log(uri);
 
       that.setState({
         previewVideo:uri
       });
 
-      // that._getQiniuToken()
-      //   .then((data) =>{
-      //
-      //     if (data && data.success) {
-      //
-      //       var token = data.data.token;
-      //       var key = data.data.key;
-      //
-      //       var body = new FormData();
-      //
-      //       body.append('token', token);
-      //       body.append('key', key);
-      //       body.append('file', {
-      //         type:'image/jpeg',
-      //         uri:uri,
-      //         name:key
-      //       });
-      //
-      //       that._upload(body)
-      //     }
-      //
-      //   });
+      that._getQiniuToken()
+        .then((data) =>{
+
+          if (data && data.success) {
+
+            var token = data.data.token;
+            var key = data.data.key;
+
+            var body = new FormData();
+
+            body.append('token', token);
+            body.append('key', key);
+            body.append('file',{
+              type:'video/mp4',
+              uri:uri,
+              name:key
+            });
+
+            that._upload(body)
+          }
+
+        });
 
     });
+  },
+  componentDidMount(){
+    var that = this;
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        console.log(data);
+        var user;
+
+        if (data) {
+          user = JSON.parse(data)
+        }
+
+
+        if (user && user.accessToken) {
+          that.setState({
+            user: user
+          })
+        }
+      })
   },
 
     render: function(){
@@ -209,7 +315,21 @@ var Edit = React.createClass({
                           onProgress={this._onProgress}   //读取数据完成 播放
                           onEnd={this._onEnd} //播放结束
                           onError={this._onError} //播放过程中错误
+
+
                         />
+                        {   !this.state.videoUploaded && this.state.videoUploading
+                          ? <View style={styles.progressTipBox}>
+                          <ProgressViewIOS style={styles.progressBar}
+                                           progressTintColor='#ee735c'
+                                           progress={this.state.videoUploadedProgress}
+                          />
+                          <Text style={styles.progressTip}>正在生成静音视频,已完成: {(this.state.videoUploadedProgress * 100).toFixed(2)}%</Text>
+                        </View>
+                          :
+                          null
+                        }
+
                       </View>
                     </View>
                   : <TouchableOpacity
@@ -306,7 +426,23 @@ var styles = StyleSheet.create({
     width:width,
     height:height * 0.6,
     backgroundColor:'#333'
-  }
+  },
+  progressTipBox:{
+    position:'absolute',
+    left:0,
+    bottom:0,
+    width:width,
+    height:30,
+    backgroundColor:'rgba(244,244,244,0.65)'
+  },
+  progressTip:{
+    color:'#333',
+    width:width - 10,
+    padding:5
+  },
+  progressBar:{
+    width:width
+  },
 
 
 

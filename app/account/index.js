@@ -117,6 +117,7 @@ var Account = React.createClass({
     var signatureURL = config.api.base + config.api.signature;
     return request.post(signatureURL, {
       accessToken: accessToken,
+      type:'avatar',
       cloud:'qiniu',
     }).catch((err)=> {
       console.log(err)
