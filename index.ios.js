@@ -31,7 +31,7 @@ var Login = require('./app/account/login');
 var xiaohai = React.createClass({
   getInitialState: function() {
     return {
-      selectedTab: 'account',
+      selectedTab: 'edit',
         logined:false,
         user : null,
     };

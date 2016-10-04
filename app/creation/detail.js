@@ -242,7 +242,9 @@ var Detail = React.createClass({
         }
 
         if (!this.state.isLoadingTail){
-            return <View style={styles.loadingMore}></View>
+            return <View style={styles.loadingMore}>
+
+                    </View>
         }
 
         return <ActivityIndicatorIOS style={styles.loadingMore} />
@@ -282,7 +284,7 @@ var Detail = React.createClass({
         return (
             <View style={styles.listHeader}>
                 <View style={styles.infoBox}>
-                    <Image style={styles.avatar} source={{uri:data.author.avatar}}/>
+                    <Image style={styles.avatar} source={{uri:data.author.avatar}}></Image>
                     <View style={styles.descBox}>
                         <Text style={styles.nickname}>{data.author.nickname}</Text>
                         <Text style={styles.title}>{data.title}</Text>
@@ -337,24 +339,24 @@ var Detail = React.createClass({
                                 nickname:'小海说',
                                 avatar:'http://dummyimage.com/640x640/b5eb54)'
                             }
-                        }].concat(items)
+                        }].concat(items);
 
                         cacheResults.items = items;
-                        cacheResults.total = cacheResults.total + 1
+                        cacheResults.total = cacheResults.total + 1;
                         that.setState({
                             content:'',
                             isSending:false,
                             dataSource:that.state.dataSource.cloneWithRows(cacheResults.items)
-                        })
+                        });
 
                         that._setModalVisible(false);
                     }
                 })
                 .catch((err) => {
-                    console.log(err)
+                    console.log(err);
                     that.setState({
                         isSending:false,
-                    })
+                    });
                     that._setModalVisible(false);
                     AlertIOS.alert('留言失败,请重试')
                 })
@@ -430,7 +432,9 @@ var Detail = React.createClass({
                                 {
                                     this.state.paused
                                     ? <Icon size={48} onPress={this._resume} name="ios-play" style={styles.resumeIcon}/>
-                                    : <Text></Text>
+                                    : <Text>
+
+                                      </Text>
                                 }
                             </TouchableOpacity>
                         :
